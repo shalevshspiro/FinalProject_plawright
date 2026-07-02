@@ -1,0 +1,6 @@
+
+pytest-playwright
+playwright
+allure-pytest
+playwright-stealth
+
