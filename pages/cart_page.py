@@ -3,7 +3,7 @@ from pages.basepage import BasePage
 
 class Cart_Page(BasePage):
     ADD_COUPON_FIELD = "#sylius_shop_cart_promotionCoupon"
-    ADD_COUPON_BTN = "[fdprocessedid='bn2yxg']"
+    # ADD_COUPON_BTN = "[fdprocessedid='bn2yxg']"
     CHECKOUT_BTN = "[type='submit']"
     PAYPAL_BTN = "[data-funding-source='paypal']"
     CLEAR_CART_BTN = "[data-live-action-param='clearCart']"

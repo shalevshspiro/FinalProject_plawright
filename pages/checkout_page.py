@@ -35,7 +35,7 @@ class Checkout_Page(BasePage):
             # פליירייט ימתין מקסימום 3 שניות לראות אם שדה המייל גלוי (מתאים למשתמש אורח)
             email_field.wait_for(state="visible", timeout=3000)
             email_field.fill(email)
-        except:
+        except TimeoutError:
             print("User is already logged in (Email field is hidden), skipping email input.")
         self.fill_text(self.FIRST_NAME_FIELD, first_name)
         self.fill_text(self.LAST_NAME_FIELD, last_name)

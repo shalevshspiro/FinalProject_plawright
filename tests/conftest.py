@@ -7,7 +7,6 @@ from pages.home_page import HomePage
 from pages.product_page import ProductPage
 from pages.login_page import LoginPage
 from pages.register_page import RegisterPage
-from pages.wishlist_page import WishlistPage
 
 BASE_URL = "https://v2.demo.sylius.com/en_US/"
 
@@ -28,7 +27,6 @@ def setup_class(request, browser):
     request.cls.product_page = ProductPage(page)
     request.cls.register_page = RegisterPage(page)
     request.cls.login_page = LoginPage(page)
-    request.cls.wishlist_page = WishlistPage(page)
 
     yield
 
@@ -53,7 +51,6 @@ def setup_function(request, browser):
     request.cls.product_page = ProductPage(page)
     request.cls.register_page = RegisterPage(page)
     request.cls.login_page = LoginPage(page)
-    request.cls.wishlist_page = WishlistPage(page)
 
     yield
 

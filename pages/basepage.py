@@ -1,6 +1,7 @@
+from __future__ import annotations
+
 from playwright.async_api import expect
 from playwright.sync_api import Page, Locator
-
 
 class BasePage:
 
@@ -17,7 +18,7 @@ class BasePage:
         el.wait_for(state="visible", timeout=timeout)
 
     def wait_for_attached(self, locator: str | Locator, timeout: int = 10000):
-        """המתן שהאלמנט יהיה ב-DOM (גם אם מוסתר)"""
+        """Wait for the element to be attached to the DOM (even if hidden)"""
         el = self._get_element(locator)
         el.wait_for(state="attached", timeout=timeout)
 
@@ -65,7 +66,7 @@ class BasePage:
         return self.page.locator(selector, has_text=text)
 
     def press_key(self, key: str):
-        """לחץ על מקש - למשל Enter, Escape"""
+        """Press a key - e.g. Enter, Escape"""
         self.page.keyboard.press(key)
 
     def verify_input_value(self, locator, expected_value):

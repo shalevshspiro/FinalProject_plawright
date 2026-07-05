@@ -57,7 +57,7 @@ class Catalog_Page(BasePage):
 
     #assers
     def search_success(self, search_term):
-        dynamic_locator = f"[alt$='{search_term} "
+        dynamic_locator = f"[alt$='{search_term}]"
         return self.is_visible(dynamic_locator)
 
     def search_error(self):

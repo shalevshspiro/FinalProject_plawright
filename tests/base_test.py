@@ -5,7 +5,6 @@ from pages.home_page import HomePage
 from pages.product_page import ProductPage
 from pages.login_page import LoginPage
 from pages.register_page import RegisterPage
-from pages.wishlist_page import WishlistPage
 
 
 class BaseTest:
@@ -16,4 +15,3 @@ class BaseTest:
     product_page: ProductPage
     register_page: RegisterPage
     login_page: LoginPage
-    wishlist_page: WishlistPage

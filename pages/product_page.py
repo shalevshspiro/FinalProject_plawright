@@ -11,7 +11,7 @@ class ProductPage(BasePage):
     TITLE_FIELD = "#sylius_shop_product_review_title"
     COMMENT_FIELD = "#sylius_shop_product_review_comment"
     EMAIL_FIELD = "#sylius_shop_product_review_author_email"
-    ADD_NEW_REVIEW_BUTTON = "[fdprocessedid='58cqcp']"
+    # ADD_NEW_REVIEW_BUTTON = "[fdprocessedid='58cqcp']"
 
 
 
