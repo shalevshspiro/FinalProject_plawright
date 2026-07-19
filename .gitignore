@@ -19,3 +19,6 @@ htmlcov/
 
 # OS
 .DS_Store
+
+# Personal notes - not part of the project
+CLAUDE_CONTEXT.md
