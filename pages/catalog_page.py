@@ -1,7 +1,7 @@
 from pages.basepage import BasePage
 
 
-class Catalog_Page(BasePage):
+class CatalogPage(BasePage):
 
     SEARCH_FIELD = "#criteria_search_value"
     SEARCH_BUTTON = ".input-group button"
@@ -51,13 +51,20 @@ class Catalog_Page(BasePage):
         self.click(self.PREVIOUS_BUTTON)
 
     def click_on_product(self, product_name):
-        dynamic_product_locator = f"[product='{product_name}']"
-        self.click(dynamic_product_locator)
+        # Exclude the mini-cart drawer (#offcanvasCart): it can already contain a
+        # thumbnail of the same product from a previous run (e.g. a shared demo
+        # account whose cart persists server-side - the same "Test Data
+        # Pollution" pattern documented in the API tests). Without the
+        # exclusion, this locator matches 2 elements and Playwright's strict
+        # mode raises. .first is a safety net for any other unexpected duplicate.
+        dynamic_product_locator = f"[product='{product_name}']:not(#offcanvasCart *)"
+        self.click(self.page.locator(dynamic_product_locator).first)
 
 
     #assers
     def search_success(self, search_term):
-        dynamic_locator = f"[alt$='{search_term} "
+        dynamic_locator = f"[alt*='{search_term}']"
+        self.page.locator(dynamic_locator).wait_for(state="visible", timeout=5000)
         return self.is_visible(dynamic_locator)
 
     def search_error(self):

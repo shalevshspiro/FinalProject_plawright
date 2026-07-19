@@ -4,7 +4,7 @@ from pages.basepage import BasePage
 class HomePage(BasePage):
     LOGIN_BTN = "#login-page-button"
     REGISTER_BTN = "#register-page-button"
-    HOME_BTN = ".border-bottom.py-4 > div > div > div.col  svg"
+    HOME_BTN = ".d-inline-block.py-lg-2"
     SHIRT_DROPDOWN = ".w-full.py-0 > div > div:nth-child(1)"
     MEN_SHIRT_BTN = "[href$='shirts/men']"
     DRESS_BTN = "[href$='category/dresses']"

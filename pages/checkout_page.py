@@ -1,8 +1,11 @@
+import re
+
+from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
+
 from pages.basepage import BasePage
 
 
-class Checkout_Page(BasePage):
-    # --- לוקייטורים של שדות הטופס ---
+class CheckoutPage(BasePage):
     EMAIL_FIELD = "#sylius_shop_checkout_address_customer_email"
     FIRST_NAME_FIELD = "#sylius_shop_checkout_address_billingAddress_firstName"
     LAST_NAME_FIELD = "#sylius_shop_checkout_address_billingAddress_lastName"
@@ -14,28 +17,32 @@ class Checkout_Page(BasePage):
     PHONE_FIELD = "#sylius_shop_checkout_address_billingAddress_phoneNumber"
     NEXT_BTN = ".flex-sm-row.gap-2 button"
     BACK_BTN = ".btn-light.btn-icon"
-    DHL_BTN = "[value='dhl_express']"
+    SHIPPING_METHOD = "input[name*='select_shipping'][name*='[method]']"
     CASH_PAY_BTN = "[value='cash_on_delivery']"
     NEXT_CASH_BTN = "[type='submit']"
 
-    # --- לוקייטורים לאימותים (Asserts) ---
     ERROR_INFO = ".invalid-feedback.d-block"
     SUCCESS_INFO = "[name='sylius_shop_checkout_select_shipping'] h5"
     SUCCESS_DHL = "[name='sylius_shop_checkout_select_payment']"
     SUCCESS_CASH = "[name='sylius_checkout_complete']"
 
+    # Known site defect: the shipping-methods step intermittently comes back empty
+    # for the same product/address. Matched by text (case-insensitive) rather than
+    # a specific CSS class, since the exact markup for this banner wasn't confirmed
+    # against the live DOM - adjust the pattern if it doesn't match in practice.
+    NO_SHIPPING_METHODS_TEXT = re.compile("no shipping method", re.IGNORECASE)
+
+
     def __init__(self, page):
         super().__init__(page)
 
     def fill_info_checkout(self, email, first_name, last_name, company, street, country, city, postcode, phone):
-        # הגדרת לוקייטור לשדה האימייל
         email_field = self.page.locator(self.EMAIL_FIELD)
 
         try:
-            # פליירייט ימתין מקסימום 3 שניות לראות אם שדה המייל גלוי (מתאים למשתמש אורח)
             email_field.wait_for(state="visible", timeout=3000)
             email_field.fill(email)
-        except:
+        except PlaywrightTimeoutError:
             print("User is already logged in (Email field is hidden), skipping email input.")
         self.fill_text(self.FIRST_NAME_FIELD, first_name)
         self.fill_text(self.LAST_NAME_FIELD, last_name)
@@ -49,9 +56,29 @@ class Checkout_Page(BasePage):
 
     def click_back(self):
         self.click(self.BACK_BTN)
+
     def choose_dhl(self):
-        self.click(self.DHL_BTN)
+        self.page.locator(self.SHIPPING_METHOD).first.check()
         self.click(self.NEXT_BTN)
+
+    def has_shipping_methods(self, timeout: int = 8000) -> bool:
+        """True once at least one shipping-method radio button is visible."""
+        try:
+            self.page.locator(self.SHIPPING_METHOD).first.wait_for(state="visible", timeout=timeout)
+            return True
+        except PlaywrightTimeoutError:
+            return False
+
+    def shipping_unavailable_message_visible(self) -> bool:
+        """Detects the 'no shipping methods available' banner for the known site defect."""
+        return self.page.get_by_text(self.NO_SHIPPING_METHODS_TEXT).count() > 0
+
+    def reload_shipping_step(self):
+        """Reload the current checkout step - used to retry past the intermittent
+        'no shipping methods' defect without re-entering the whole address form."""
+        self.page.reload()
+        self.page.wait_for_load_state("networkidle")
+
     def choose_cash(self):
         self.click(self.CASH_PAY_BTN)
         self.click(self.NEXT_BTN)
@@ -73,3 +100,14 @@ class Checkout_Page(BasePage):
         return self.is_visible(self.SUCCESS_DHL)
     def success_cash(self):
         return self.is_visible(self.SUCCESS_CASH)
+    def success_load_checkout(self):
+        return self.is_visible(self.EMAIL_FIELD)
+
+    def is_shipping_step_active_successfully(self) -> bool:
+        """
+        Checks if the shipping step page is actively displaying the shipment setup,
+        ensuring that the page didn't load the intermittent 'Warning' bug instead.
+        """
+        shipment_header = self.page.get_by_role("heading", name="Shipment #")
+        return shipment_header.is_visible()
+

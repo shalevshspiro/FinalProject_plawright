@@ -1,6 +1,4 @@
-
-pytest-playwright
-playwright
-allure-pytest
-playwright-stealth
-
+pytest==8.4.2
+pytest-playwright==0.7.1
+playwright==1.60.0
+allure-pytest==2.16.0
