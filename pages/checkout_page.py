@@ -84,6 +84,15 @@ class CheckoutPage(BasePage):
         self.click(self.NEXT_BTN)
 
 
+    def complete_order(self):
+        """Submit the review form and require the order confirmation page."""
+        from playwright.sync_api import expect
+        form = self.page.locator(self.SUCCESS_CASH)
+        expect(form).to_be_visible()
+        form.locator("button[type='submit']").click()
+        expect(self.page).to_have_url(re.compile(r".*/thank-you(?:[/?#].*)?$"))
+        expect(self.page.get_by_role("heading", name=re.compile("thank you", re.I))).to_be_visible()
+
     # --- (Assertions)
 
     def verify_saved_checkout_fields(self, expected_email, expected_city):

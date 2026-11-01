@@ -5,6 +5,7 @@ import random
 import string
 
 import allure
+from playwright.sync_api import expect
 
 from data.base_data import (
     CHECKOUT_ADDRESS,
@@ -83,6 +84,13 @@ class TestSecurityPro(BaseTest):
                 "  Expected: checkout summary page reached\n"
                 "  Actual:   flow did not complete"
             )
+
+        with allure.step("Verify the payload is visibly reflected as harmless text"):
+            expect(self.page.locator("body")).to_contain_text(xss_payload)
+            assert self.page.locator("script").evaluate_all(
+                "(nodes, payload) => nodes.every(node => !payload.includes(node.outerHTML))",
+                xss_payload,
+            ), "Payload was rendered as a script element"
 
         with allure.step("Verify the raw <script> tag is NOT present unescaped in the page"):
             page_content = self.page.content()
@@ -198,48 +206,26 @@ class TestSecurityPro(BaseTest):
     # 3. SECURITY - Broken Access Control
     # ------------------------------------------------------------------------
     @pytest.mark.security
-    def test_broken_access_control_exposed_identifiers(self):
+    def test_account_dashboard_requires_authentication(self, browser):
+        """Deny a fresh guest access to a verified authenticated account URL.
+
+        This covers anonymous access, not cross-account ownership/IDOR.
         """
-        OWASP A01:2021 - Broken Access Control.
-        Logs in as a valid user and verifies the account page does not leak
-        raw user/customer identifiers that could enable horizontal access.
+        dashboard_url = f"{self.BASE_URL}account/dashboard"
+        self.home_page.goto_login()
+        self.login_page.login(self.VALID_USER, self.VALID_PASSWORD)
+        self.page.goto(dashboard_url)
+        expect(self.page).to_have_url(dashboard_url)
+        expect(self.page.locator(self.login_page.SUCCESS_LOGIN)).to_be_visible()
 
-        Steps to reproduce:
-            1. Log in with valid demo-shop credentials.
-            2. Inspect the rendered page HTML for identifier-leak patterns
-               (user_id=, account_id=, customer_id=, /user/, /customer/).
-
-        Expected result:
-            None of the leak indicators are present in the page source.
-        """
-        print("\n🔒 Access control - scanning account page for exposed identifiers")
-
-        with allure.step("Authenticate as a valid user"):
-            self.home_page.goto_login()
-            self.login_page.login(self.VALID_USER, self.VALID_PASSWORD)
-            print(f"  URL after login: {self.page.url}")
-            assert self.login_page.login_success(), "Login failed - cannot evaluate access control"
-
-        with allure.step("Scan the rendered page for identifier leakage"):
-            page_source = self.page.content().lower()
-            leak_indicators = [
-                "user_id=",
-                "account_id=",
-                "customer_id=",
-                "/user/",
-                "/customer/",
-            ]
-            exposed = [token for token in leak_indicators if token in page_source]
-
-        allure.attach("No raw identifiers exposed", name="Expected result",
-                       attachment_type=allure.attachment_type.TEXT)
-        allure.attach(str(exposed) if exposed else "none found", name="Actual result",
-                       attachment_type=allure.attachment_type.TEXT)
-        assert not exposed, (
-            f"🚨 BROKEN ACCESS CONTROL: exposed identifier(s) found -> {exposed}"
-        )
-
-        print("✅ Access control OK - no raw identifiers exposed")
+        guest_context = browser.new_context()
+        try:
+            guest = guest_context.new_page()
+            guest.goto(dashboard_url)
+            expect(guest).to_have_url(f"{self.BASE_URL}login")
+            expect(guest.locator(self.login_page.USERNAME_FIELD)).to_be_visible()
+        finally:
+            guest_context.close()
 
     @pytest.mark.security
     def test_brute_force_login_probe(self):

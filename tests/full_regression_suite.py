@@ -81,3 +81,8 @@ class TestFullSuite(
     aggregation point.
     """
     pass
+
+
+class TestFullApiSuite(api_test.TestApiPro):
+    """Collect API tests separately so UI setup and BASE_URL cannot leak in."""
+    pass
