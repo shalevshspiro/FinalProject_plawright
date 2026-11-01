@@ -29,10 +29,10 @@ class TestE2E(BaseTest):
         with allure.step("Choose a shipping method and pay by cash on delivery"):
             self.choose_shipping_with_retry()
             self.checkout_page.choose_cash()
-            self.checkout_page.wait_for_visible(self.checkout_page.SUCCESS_CASH)
+            self.checkout_page.complete_order()
 
         assert_true(
-            self.checkout_page.success_cash(),
+            "/thank-you" in self.page.url,
             "Guest checkout should complete successfully with cash on delivery",
         )
 
@@ -61,9 +61,9 @@ class TestE2E(BaseTest):
         with allure.step("Choose a shipping method and pay by cash on delivery"):
             self.choose_shipping_with_retry()
             self.checkout_page.choose_cash()
-            self.checkout_page.wait_for_visible(self.checkout_page.SUCCESS_CASH)
+            self.checkout_page.complete_order()
 
         assert_true(
-            self.checkout_page.success_cash(),
+            "/thank-you" in self.page.url,
             "Logged-in checkout should complete successfully with cash on delivery",
         )

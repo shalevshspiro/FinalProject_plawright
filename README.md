@@ -25,7 +25,7 @@ tests/
   assertions.py            assert_true / assert_equal / assert_contains / assert_url_equals -
                            wrap a check in an Allure step and attach Expected vs Actual
   conftest.py              browser/page fixtures, screenshot-on-failure hook, Allure auto-open
-  full_regression_suite.py  aggregates every test class into one, for a single combined run/report
+  full_regression_suite.py  collects UI and API classes separately, for a single combined run/report
 
   home_test.py, catalog_test.py, product_test.py, cart_test.py,
   checkout_test.py, e_to_e_test.py, login_register_test.py    functional UI coverage
@@ -64,14 +64,14 @@ Test markers (`pytest -m smoke`, `-m security`, etc.):
 - `regression` - broader functional coverage
 - `e2e` - full purchase journeys, guest and logged-in
 - `api` - hits the Sylius API directly, no browser
-- `security` - XSS, broken access control, brute-force login, negative-quantity injection
+- `security` - XSS reflection, anonymous account access, brute-force login, negative-quantity injection
 - `performance` - navigation stress/response-time test
 
 ## Known issues in the environment (not bugs in this suite)
 
 A few things surfaced while building this that are worth flagging up front, because a green or red run doesn't always mean what it looks like on a shared public demo:
 
-- **Intermittent "no shipping methods available" at checkout.** Reproduces with the exact same product/address, sometimes. `choose_shipping_with_retry()` in `base_test.py` retries a few times with a fresh cart and a backoff, and raises a clear message if it doesn't clear up - it doesn't hide the underlying defect, it just stops it from being reported as a random `TimeoutError`.
+- **Intermittent "no shipping methods available" at checkout.** Reproduces with the exact same product/address, sometimes. `choose_shipping_with_retry()` in `base_test.py` retries the same shipping page with a backoff, preserving the cart and session, and raises a clear message if it doesn't clear up - it doesn't hide the underlying defect, it just stops it from being reported as a random `TimeoutError`.
 - **Shared demo account cart state.** `shop@example.com` is a public login used by anyone testing against this instance, so its cart can already contain items from a previous run. `catalog_page.click_on_product()` explicitly excludes the mini-cart drawer from its locator for this reason.
 - **Catalog counts can drift.** `test_item_num` expects 18 products in a category; if someone else's script adds/disables a product in the meantime, that number moves with zero code change on this end. Documented in the test itself rather than loosened, since a tolerant assertion would hide a real regression too.
 - **API tests use quantity=1, not a higher number.** Same root cause - shared inventory can run low enough that a request for e.g. quantity=2 silently gets clamped to what's left. Documented inline in `api_test.py`.
