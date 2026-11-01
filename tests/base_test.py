@@ -38,45 +38,19 @@ class BaseTest:
         max_attempts: int = 3,
         backoff_seconds: float = 3.0,
     ):
-        """
-        Known application defect: the shipping-methods step intermittently returns
-        'No shipping methods available'. It reproduces regardless of country/address,
-        so this looks like real backend flakiness (e.g. a stuck cache or a bad node
-        behind a load balancer) rather than a data/config problem. A same-page reload
-        wasn't enough to dodge it in practice, so each retry:
-          1. waits a few seconds to give the backend a chance to recover, then
-          2. navigates back to the site's home page (the checkout page's header
-             doesn't carry the full nav menu, so re-entering the flow directly
-             from there breaks goto_dresses()), then
-          3. re-enters checkout from scratch with a brand-new cart/session,
-        instead of retrying the exact same stuck page/cart. If the defect still
-        persists after all attempts, raise a clear diagnostic error instead of a
-        bare Playwright TimeoutError.
-        """
-        address = address or CHECKOUT_ADDRESS
-
+        """Retry the confirmed unavailable state without changing the cart."""
+        if max_attempts < 1:
+            raise ValueError("max_attempts must be at least 1")
         for attempt in range(1, max_attempts + 1):
             if self.checkout_page.has_shipping_methods(timeout=8000):
                 self.checkout_page.choose_dhl()
                 return
-
-            print(
-                f"⚠️  KNOWN SITE BUG - no shipping methods available on attempt "
-                f"{attempt}/{max_attempts}. Waiting {backoff_seconds}s and retrying "
-                "with a fresh cart/session..."
+            assert self.checkout_page.shipping_unavailable_message_visible(), (
+                "Shipping controls missing without the expected unavailable message"
             )
-            time.sleep(backoff_seconds)
-
             if attempt < max_attempts:
-                self.page.goto(BASE_URL)
-                self.add_product_to_cart(product_name)
-                self.cart_page.checkout()
-                self.checkout_page.fill_info_checkout(**address)
-
+                time.sleep(backoff_seconds)
+                self.checkout_page.reload_shipping_step()
         raise AssertionError(
-            "🚨 Known site defect reproduced: 'No shipping methods available' persisted "
-            f"after {max_attempts} attempts, each with a fresh cart/session and a "
-            f"{backoff_seconds}s backoff. This is an application-side bug (intermittent "
-            "shipping-method availability at checkout), not a broken locator or "
-            "test-data issue - see bug report."
+            f"No shipping methods available after {max_attempts} attempts on the same cart"
         )

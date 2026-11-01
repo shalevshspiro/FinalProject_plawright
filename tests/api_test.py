@@ -187,17 +187,24 @@ class TestApiPro:
 
             # Case A - API rejected it with a validation error (secure behaviour)
             if res.status in (400, 422):
-                print("  ✅ API rejected the negative quantity (validation works)")
+                errors = res.json().get("violations", [])
+                assert any(
+                    "quantity" in error.get("propertyPath", "").lower()
+                    for error in errors
+                ), f"Request failed without a quantity validation error: {res.text()}"
                 return
-            if not res.ok:
-                print(f"  ✅ API rejected the request (status {res.status})")
-                return
+            assert res.ok, (
+                f"Unexpected response; quantity validation was not verified: "
+                f"{res.status} {res.text()}"
+            )
 
             # Case B - API returned 2xx: inspect whether it actually persisted
             with allure.step("Inspect whether the negative quantity was actually persisted"):
-                body = res.json()
-                items = body.get("items", [])
-                stored_qty = items[0]["quantity"] if items else None
+                persisted = api.get(f"{self.API}/orders/{cart_token}", headers=auth)
+                assert persisted.ok, f"Cannot inspect cart: {persisted.status}"
+                items = persisted.json().get("items", [])
+                quantities = [item["quantity"] for item in items]
+                stored_qty = min(quantities) if quantities else None
                 print(f"  Stored quantity: {stored_qty}")
 
             allure.attach("None, or >= 0", name="Expected result", attachment_type=allure.attachment_type.TEXT)
